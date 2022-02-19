@@ -1,3 +1,4 @@
+from distutils.log import ERROR
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -6,19 +7,28 @@ import imaplib
 from email import encoders
 import os
 import email
-from rich.layout import Layout
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
-from rich.table import Table
-from rich.progress import Progress
+from tkinter import E
+from typing import final
 from bs4 import BeautifulSoup
-import multiprocessing
 
 
 class CommManager:
-    def __init__(self, phone_num, carrier, email_address, email_password):
+    """A class used to send and receive messages over SMS/MMS email gateways
 
+    """
+
+    def __init__(self, phone_num: str, carrier: str, email_address: str, email_password: str):
+        """Parameters
+
+        Args:
+            phone_num (str):Phone number to send messages to.  Will also filter received messages
+            carrier (str): Carrier, see documentation for additional info
+            email_address (str): Email to send/receive from.  It is reccomended to create a dedicated account.
+            email_password (str): Password to email account.
+
+        """
+
+        # Common U.S. Carriers and their email gateway addresses
         carriers_dict = {"AT&T": ['txt.att.net', 'mms.att.net'],
                          "Verizon": ["vtext.com", "vzwpix.com"],
                          "Sprint": ["messaging.sprintpcs.com", "pm.sprint.com"],
@@ -28,6 +38,22 @@ class CommManager:
                          "Virgin Mobile": ["vmobl.com", "vmpix.com"],
                          "US Cellular": ["email.uscc.net", "mms.uscc.net"]}
 
+        smtp_server_dict = {"gmail": ["smtp.gmail.com", 587, "imap.gmail.com"]}
+
+        autolookup = False
+        for i in smtp_server_dict.keys():
+            if i in email_address:
+                self.smtp_data = smtp_server_dict.get(i)
+                autolookup = True
+                break
+
+        if not autolookup:
+            print(*smtp_server_dict.keys(), sep='\n')
+            try:
+                self.smtp_data = smtp_server_dict.get(input("Choose an email provider from above: "))
+            except KeyError as e:
+                raise e
+
         self.send_addr = email_address
         self.send_pass = email_password
         self.phone = phone_num
@@ -35,46 +61,67 @@ class CommManager:
         self.receiver_addr_sms = phone_num + "@" + carriers_dict.get(carrier)[0]
         self.receiver_addr_mms = phone_num + "@" + carriers_dict.get(carrier)[1]
 
-
-    def send_sms(self, subject: str, text=""):
-
-        # Setup the MIME
+    def _build_message(self, subject, type, text=""):
+        # Building Base MIME message
         message = MIMEMultipart()
         message['From'] = self.send_addr
-        message['To'] = self.receiver_addr_sms
-        message['Subject'] = subject  # The subject line
+        if type == "sms":
+            message['To'] = self.receiver_addr_sms
+        elif type == "mms":
+            message['To'] = self.receiver_addr_mms
 
-        message.attach(MIMEText(text))
+        message['Subject'] = subject
+
+        # If we have a body to our message
+        if text is not None:
+            message.attach(MIMEText(text))
+
+        return message
+
+    def _send_message(self, message_text, type):
+        try:
+            session = smtplib.SMTP(self.smtp_data[0], self.smtp_data[1])
+            session.starttls()
+            session.login(self.send_addr, self.send_pass)
+
+            if type == "sms":
+                session.sendmail(self.send_addr, self.receiver_addr_sms, message_text)
+            elif type == "mms":
+                session.sendmail(self.send_addr, self.receiver_addr_mms, message_text)
+
+        except smtplib.SMTPException as e:
+            raise e
+
+        else:
+            session.quit()
+
+    def send_sms(self, subject: str, text: str = None):
+        """Will send an SMS message to the configured phone.
+
+        If text argument is not passed in, message will only contain a subject line.
+
+        Args:
+            subject (_type_): Subject of message.
+            text (str, optional): Body of your message. Defaults to None.
+        """
+        message = self._build_message(subject, "sms", text)
+
+        # Convert MIME to string for sending
         text = message.as_string()
 
-        # Create SMTP session for sending the mail
-        try:
-            session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port
-            session.starttls()  # enable security
-            session.login(self.send_addr, self.send_pass)  # login with mail_id and password
-            session.sendmail(self.send_addr, self.receiver_addr_sms, text)
-            print("[INFO] Message Sent")
+        # Send Message
+        self._send_message(text, "sms")
 
-            session.quit()
-            print("[INFO] Session Terminated")
+    def send_mms(self, subject: str, text: str = None, path=None):
+        """Will send a MMS message to the configured phone.
 
-
-        except:
-            print("[ERROR] Email Credentials Error!")
-
-        finally:
-            print("[INFO] Message Successfully Sent")
-
-    def send_mms(self, subject: str, text: str, path=None):
-
-        # Setup the MIME
-        message = MIMEMultipart()
-        message['From'] = self.send_addr
-        message['To'] = self.receiver_addr_mms
-        message['Subject'] = str(subject)  # The subject line
-
-        # Adding Text
-        message.attach(MIMEText(text))
+        Args:
+            subject (str): Subject of message.
+            text (str, optional): Body of message. Defaults to None.
+            path (str, optional): Send an attachment with message. Defaults to None.
+        """
+        # Setup Base Message
+        message = self._build_message(subject, "mms", text)
 
         # If sending an attachment...
         if path is not None:
@@ -86,24 +133,30 @@ class CommManager:
             part.add_header('Content-Disposition', 'attachment; filename={}'.format(filename))
             message.attach(part)
 
-        # Create SMTP session for sending the mail
-        session = smtplib.SMTP('smtp.gmail.com', 587)  # use gmail with port
-        session.starttls()  # enable security
-        session.login(self.send_addr, self.send_pass)  # login with mail_id and password
-
         text = message.as_string()
-        session.sendmail(self.send_addr, self.receiver_addr_mms, text)
-        session.quit()
 
-    def check_incoming(self):
+        self._send_message(text, "mms")
+
+    def check_incoming(self, mailbox='inbox'):
+        """Check incoming mailboxes for messages from phone
+
+            Will only read unread messages from configured phone number
+
+        Args:
+            mailbox (str, optional): Which mailbox to check. Defaults to 'inbox'.
+
+        Returns:
+            array: Returns an array of the responses.
+        """
         message = []
 
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(self.send_addr, self.send_pass)
         mail.list()
-        mail.select('inbox')
+        mail.select(mailbox)
 
         (retcode, messages) = mail.search(None, '(UNSEEN)')
+
         if retcode == 'OK':
 
             for num in messages[0].split():
@@ -129,7 +182,4 @@ class CommManager:
                                         message.append(str(tag.text.strip()))
 
                             typ, data = mail.store(num, '+FLAGS', '\\Seen')
-
         return message
-)
-
