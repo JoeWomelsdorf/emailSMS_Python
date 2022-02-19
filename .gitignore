@@ -4,3 +4,4 @@ requirements.txt
 setup.cfg
 /build
 /tests
+/src/emailSMS_python3.egg-info
