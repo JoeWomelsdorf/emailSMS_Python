@@ -2,6 +2,6 @@
 pyproject.toml
 requirements.txt
 setup.cfg
-/build
+/dist
 /tests
 /src/emailSMS_python3.egg-info
