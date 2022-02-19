@@ -11,8 +11,10 @@ from tkinter import E
 from typing import final
 from bs4 import BeautifulSoup
 
+__version__ = 'dev'
 
-class CommManager:
+
+class EmailSMS:
     """A class used to send and receive messages over SMS/MMS email gateways
 
     """
