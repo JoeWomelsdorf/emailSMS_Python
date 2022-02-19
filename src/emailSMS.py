@@ -1,4 +1,3 @@
-from distutils.log import ERROR
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -7,14 +6,10 @@ import imaplib
 from email import encoders
 import os
 import email
-from tkinter import E
-from typing import final
 from bs4 import BeautifulSoup
 
-__version__ = 'dev'
 
-
-class EmailSMS:
+class Manager:
     """A class used to send and receive messages over SMS/MMS email gateways
 
     """
