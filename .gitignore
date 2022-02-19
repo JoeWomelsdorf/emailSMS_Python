@@ -1,3 +1,6 @@
 *.log
 pyproject.toml
 requirements.txt
+setup.cfg
+/build
+/tests
