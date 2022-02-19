@@ -32,51 +32,9 @@ class CommManager:
         self.send_pass = email_password
         self.phone = phone_num
         self.carrier = carrier
-        self.num_sent = 0
-        self.num_recv = 0
         self.receiver_addr_sms = phone_num + "@" + carriers_dict.get(carrier)[0]
         self.receiver_addr_mms = phone_num + "@" + carriers_dict.get(carrier)[1]
-        self.version = 1.0
-        self.log = []
-        self.console = Console()
-        self.layout = Layout()
 
-        # Setting Up Console------------------------------------------------------------------------------
-        # Dividing into Panels
-        self.layout.split_column(Layout(name="header", size=3), Layout(name="main", ratio=1),
-                                 Layout(name="footer", size=5))
-        self.layout["main"].split_row(Layout(name="right", ratio=2), Layout(name="left", ratio=3))
-
-        # Title Panel
-        title = Text("Email to SMS Gateway Manager", justify="center", style="bold green")
-        self.layout["header"].update(Panel(title, subtitle="[blue]Version 1.0", style="blue"))
-
-        # Right Panel
-        table = Table(title=None, style="white")
-        table.add_column("[red]Parameter", justify="right", style="green", no_wrap=False)
-        table.add_column("[red]Value", justify="right", style="yellow", no_wrap=False)
-
-        table.add_row("Phone", "({})-{}-{}".format(self.phone[0:3], self.phone[3:6], self.phone[6:10]))
-        table.add_row("Carrier", self.carrier)
-        table.add_row("Email", self.send_addr)
-        table.add_row("MMS Gateway ", self.receiver_addr_mms)
-        table.add_row("SMS Gateway ", self.receiver_addr_sms)
-        table.add_row("Messages Sent", str(self.num_sent))
-        table.add_row("Messages Received", str(self.num_recv))
-
-        self.layout["right"].update(Panel(table, style="blue", title="[green]Current Settings"))
-
-        #Log
-        self.layout["left"].update(Panel("",title="Log", style="blue" ))
-
-        #Status
-        with Progress() as progress:
-            self.send_sms_task = progress.add_task("[green] Sending SMS...", total=1000)
-            self.send_mms_task = progress.add_task("[green] Sending MMS...", total=1000)
-            self.recv_task = progress.add_task("[blue] Checking for Incoming Messages...", total=1000)
-
-
-        self.console.print(self.layout)
 
     def send_sms(self, subject: str, text=""):
 
@@ -173,10 +131,5 @@ class CommManager:
                             typ, data = mail.store(num, '+FLAGS', '\\Seen')
 
         return message
-
-
-if __name__ == "__main__":
-    manager = CommManager(phone_num='8602567173', carrier="AT&T",
-                          email_address="home.server.management.service@gmail.com",
-                          email_password="Jpwomelsdorf712?")
+)
 
