@@ -6,16 +6,16 @@ Gateway between email and SMS/MMS for Python3.  Allows for two way communication
 Install requirements with [pip](https://pip.pypa.io/en/stable/)
 
 ```bash
-pip install -r requirements.txt
+pip install emailSMS-python3
 ```
 
 ## Usage
 
 ```python
-from EmailSMS import emailSMS
+from emailSMS.emailSMS import Manager
 
-# Initialize CommManager Object
-manager = CommManager(phone_num='XXXXXXXXXX', carrier="XXXX",
+# Initialize Manager Object
+manager = Manager(phone_num='XXXXXXXXXX', carrier="XXXX",
                           email_address="EMAIL",
                           email_password="PASSWORD")
 
