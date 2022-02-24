@@ -5,3 +5,5 @@ setup.cfg
 /dist
 /tests
 /src/emailSMS_python3.egg-info
+/src/emailSMS/emailSMS_python3.egg-info
+
