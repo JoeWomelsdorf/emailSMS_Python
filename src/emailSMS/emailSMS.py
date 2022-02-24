@@ -7,6 +7,7 @@ from email import encoders
 import os
 import email
 from bs4 import BeautifulSoup
+import re
 
 
 class Manager:
@@ -37,6 +38,7 @@ class Manager:
 
         smtp_server_dict = {"gmail": ["smtp.gmail.com", 587, "imap.gmail.com"]}
 
+        #Check valid email provider
         autolookup = False
         for i in smtp_server_dict.keys():
             if i in email_address:
@@ -47,14 +49,26 @@ class Manager:
         if not autolookup:
             print(*smtp_server_dict.keys(), sep='\n')
             try:
-                self.smtp_data = smtp_server_dict.get(input("Choose an email provider from above: "))
+                self.smtp_data = smtp_server_dict.get(input("Email Provider Error: Choose an email provider from above: "))
             except KeyError as e:
-                raise e
+                raise e("Invalid Provider!")
+        
+        
+        #Check Valid Email
+        regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        if re.search(regex, email_address): self.send_addr = email_address
+        else: raise TypeError("Invalid Email Address!")
 
-        self.send_addr = email_address
         self.send_pass = email_password
-        self.phone = phone_num
-        self.carrier = carrier
+
+        #Check Valid Phone Num
+        if re.search(r"(^[0-9]{10}$)", phone_num): self.phone = phone_num
+        else: raise TypeError("Invalid Phone Number!")
+
+        #Check Valid Carrier
+        if carrier in carriers_dict.keys(): self.carrier = carrier
+        else: raise KeyError("Inavlid Carrier. See Documentation for correct use.")
+
         self.receiver_addr_sms = phone_num + "@" + carriers_dict.get(carrier)[0]
         self.receiver_addr_mms = phone_num + "@" + carriers_dict.get(carrier)[1]
 
